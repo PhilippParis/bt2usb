@@ -1,16 +1,4 @@
 dependencies:
-  espressif/ble_conn_mgr:
-    component_hash: fa0e88eef06bf3135f333fea5e752411d47e379da7f2659520b7036573a79b7f
-    source:
-      service_url: https://api.components.espressif.com/
-      type: service
-    version: 0.1.2
-  espressif/cmake_utilities:
-    component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
-    source:
-      service_url: https://api.components.espressif.com/
-      type: service
-    version: 0.5.3
   espressif/esp_tinyusb:
     component_hash: f151d680d6847bfcfd5d8eb6d1c3ff926c208e6b963b2e83643a141bc70baa15
     source:
@@ -28,6 +16,6 @@ dependencies:
     source:
       type: idf
     version: 5.3.0
-manifest_hash: 4435ace9e5f0ef1f07ca8fa6c491b1333b4c667e2d0a085ef447458df385cda6
+manifest_hash: 4c561b543919438056db2e32fa0046c76ccf95a9fecc367bb3af6a8f1d6d7d95
 target: esp32s3
 version: 1.0.0

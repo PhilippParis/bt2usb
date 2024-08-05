@@ -1,5 +1,4 @@
 ## IDF Component Manager Manifest File
 dependencies:
-  espressif/ble_conn_mgr: "^0.1.2"
   espressif/esp_tinyusb: "^1.1"
   idf: "^5.0"

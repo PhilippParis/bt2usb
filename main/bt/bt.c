@@ -14,6 +14,26 @@ void ble_hid_host_task(void *param)
 void ble_store_config_init(void);
 #endif
 
+void hid_connect_task(void *pvParameters)
+{
+    size_t results_len = 0;
+    esp_hid_scan_result_t *results = NULL;
+    ESP_LOGI(TAG, "SCAN...");
+    //start scan for HID devices
+    esp_hid_scan(SCAN_DURATION_SECONDS, &results_len, &results);
+    ESP_LOGI(TAG, "SCAN: %u results", results_len);
+    if (results_len) {
+        esp_hid_scan_result_t *r = results;
+        esp_hid_scan_result_t *cr = NULL;
+        while (r) {
+            printf("NAME: %s \n", r->name ? r->name : "");
+            r = r->next;
+        }
+        esp_hid_scan_results_free(results);
+    }
+    vTaskDelete(NULL);
+}
+
 esp_err_t init_bluetooth(esp_event_handler_t hidh_callback)  {
 #if HID_HOST_MODE == HIDH_IDLE_MODE
     ESP_LOGE(TAG, "Please turn on BT HID host or BLE!");
@@ -52,5 +72,6 @@ esp_err_t init_bluetooth(esp_event_handler_t hidh_callback)  {
         ESP_LOGE(TAG, "esp_nimble_enable failed: %d", ret);
     }
 #endif
+    xTaskCreate(&hid_connect_task, "hid_task", 6 * 1024, NULL, 2, NULL);
     return ESP_OK;
 }

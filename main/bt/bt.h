@@ -24,6 +24,8 @@
 #include "esp_bt_device.h"
 #endif
 
+#define SCAN_DURATION_SECONDS 20
+
 esp_err_t init_bluetooth(esp_event_handler_t hidh_callback);
 
 
