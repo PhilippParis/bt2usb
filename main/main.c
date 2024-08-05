@@ -41,6 +41,8 @@ void bt_hidh_callback(void *handler_args, esp_event_base_t base, int32_t id, voi
     esp_hidh_event_t event = (esp_hidh_event_t)id;
     esp_hidh_event_data_t *param = (esp_hidh_event_data_t *)event_data;
     // TODO forward BT hidh event to USB
+
+    ESP_LOGI(TAG, "HIDH callback received");
 }
 
 static void mouse_draw_square_next_delta(int8_t *delta_x_ret, int8_t *delta_y_ret)

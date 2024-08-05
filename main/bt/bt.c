@@ -1,5 +1,8 @@
 #include "bt.h"
 
+#include <stdio.h>  
+#include <string.h> 
+
 static const char *TAG = "BLUETOOTH";
 
 #if CONFIG_BT_NIMBLE_ENABLED
@@ -24,11 +27,16 @@ void hid_connect_task(void *pvParameters)
     ESP_LOGI(TAG, "SCAN: %u results", results_len);
     if (results_len) {
         esp_hid_scan_result_t *r = results;
-        esp_hid_scan_result_t *cr = NULL;
         while (r) {
             printf("NAME: %s \n", r->name ? r->name : "");
+            // TODO connect to devices by name?
+            char *device_name = "MX Master 3";
+            if (strcmp(r->name, device_name) == 0) {
+                esp_hidh_dev_open(r->bda, r->transport, r->ble.addr_type);
+            }
             r = r->next;
         }
+
         esp_hid_scan_results_free(results);
     }
     vTaskDelete(NULL);
