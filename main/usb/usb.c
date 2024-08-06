@@ -2,10 +2,14 @@
 
 static const char *TAG = "USB";
 
+/*
 const uint8_t hid_report_descriptor[] = {
     TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(HID_ITF_PROTOCOL_KEYBOARD)),
     TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(HID_ITF_PROTOCOL_MOUSE))
 };
+*/
+uint8_t *hid_report_descriptor;
+uint8_t *hid_configuration_descriptor;
 
 const char* hid_string_descriptor[5] = {
     // array of pointer to string descriptors
@@ -16,19 +20,6 @@ const char* hid_string_descriptor[5] = {
     "Example HID interface",  // 4: HID
 };
 
-/**
- * @brief Configuration descriptor
- *
- * This is a simple configuration descriptor that defines 1 configuration and 1 HID interface
- */
-static const uint8_t hid_configuration_descriptor[] = {
-    // Configuration number, interface count, string index, total length, attribute, power in mA
-    TUD_CONFIG_DESCRIPTOR(1, 1, 0, TUSB_DESC_TOTAL_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
-
-    // Interface number, string index, boot protocol, report descriptor len, EP In address, size & polling interval
-    TUD_HID_DESCRIPTOR(0, 4, false, sizeof(hid_report_descriptor), 0x81, 16, 10),
-};
-
 /********* TinyUSB HID callbacks ***************/
 
 
@@ -37,6 +28,7 @@ static const uint8_t hid_configuration_descriptor[] = {
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance)
 {
     // We use only one interface and one HID report descriptor, so we can ignore parameter 'instance'
+    ESP_LOGI(TAG, "send hid report descriptors");
     return hid_report_descriptor;
 }
 
@@ -60,9 +52,23 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
 {
 }
 
-esp_err_t init_usb()
+esp_err_t init_usb(uint8_t report_descriptor[], int report_len)
 {
     ESP_LOGI(TAG, "USB initialization");
+    // INIT HID REPORT DESCRIPTOR
+    hid_report_descriptor = report_descriptor;
+    
+    // INIT HID CONFIGURATION DESCRIPTOR
+    uint8_t configuration_descriptor[] = {
+        // Configuration number, interface count, string index, total length, attribute, power in mA
+        TUD_CONFIG_DESCRIPTOR(1, 1, 0, TUSB_DESC_TOTAL_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
+        // Interface number, string index, boot protocol, report descriptor len, EP In address, size & polling interval
+        TUD_HID_DESCRIPTOR(0, 4, false, report_len, 0x81, 16, 10),
+    };
+    hid_configuration_descriptor = malloc(sizeof(configuration_descriptor));
+    memcpy(hid_configuration_descriptor, configuration_descriptor, sizeof(configuration_descriptor));
+    
+    // INIT USB CONFIG
     const tinyusb_config_t tusb_cfg = {
         .device_descriptor = NULL,
         .string_descriptor = hid_string_descriptor,

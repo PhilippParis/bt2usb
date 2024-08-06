@@ -42,7 +42,7 @@ void hid_connect_task(void *pvParameters)
     vTaskDelete(NULL);
 }
 
-esp_err_t init_bluetooth(esp_event_handler_t hidh_callback)  {
+esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc_callback)  {
 #if HID_HOST_MODE == HIDH_IDLE_MODE
     ESP_LOGE(TAG, "Please turn on BT HID host or BLE!");
     return ESP_FAIL;
@@ -57,7 +57,7 @@ esp_err_t init_bluetooth(esp_event_handler_t hidh_callback)  {
     ESP_ERROR_CHECK( esp_hid_gap_init(HID_HOST_MODE) );
 
 #if CONFIG_BT_BLE_ENABLED
-    ESP_ERROR_CHECK( esp_ble_gattc_register_callback(esp_hidh_gattc_event_handler) );
+    ESP_ERROR_CHECK( esp_ble_gattc_register_callback(gattc_callback) );
 #endif /* CONFIG_BT_BLE_ENABLED */
 
     esp_hidh_config_t config = {
