@@ -2,12 +2,6 @@
 
 static const char *TAG = "USB";
 
-/*
-const uint8_t hid_report_descriptor[] = {
-    TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(HID_ITF_PROTOCOL_KEYBOARD)),
-    TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(HID_ITF_PROTOCOL_MOUSE))
-};
-*/
 uint8_t *hid_report_descriptor;
 uint8_t *hid_configuration_descriptor;
 
@@ -70,7 +64,7 @@ esp_err_t init_usb(uint8_t report_descriptor[], int report_len)
     
     // INIT USB CONFIG
     const tinyusb_config_t tusb_cfg = {
-        .device_descriptor = NULL,
+        .device_descriptor = NULL, // TODO add device descriptor
         .string_descriptor = hid_string_descriptor,
         .string_descriptor_count = sizeof(hid_string_descriptor) / sizeof(hid_string_descriptor[0]),
         .external_phy = false,
