@@ -18,6 +18,8 @@
 
 static const char *TAG = "example";
 
+static const char *devices[] = {"MX Master 3"};
+
 uint8_t *report_descriptor = NULL;
 uint8_t report_len = 0;
 
@@ -76,8 +78,12 @@ void bt_hidh_callback(void *handler_args, esp_event_base_t base, int32_t id, voi
 
 void app_main(void)
 {
+    bt_device_names_t *bt_devices = malloc(sizeof(bt_device_names_t));
+    bt_devices->names = devices;
+    bt_devices->length = sizeof(devices) / sizeof(devices[0]);
+
     // INIT BLUETOOTH
-    init_bluetooth(bt_hidh_callback, bt_gattc_callback);
+    init_bluetooth(bt_hidh_callback, bt_gattc_callback, bt_devices);
     // wait for BT devices to connect
     while(report_descriptor == NULL) {
         vTaskDelay(pdMS_TO_TICKS(100));

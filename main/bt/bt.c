@@ -21,28 +21,30 @@ void hid_connect_task(void *pvParameters)
 {
     size_t results_len = 0;
     esp_hid_scan_result_t *results = NULL;
+    bt_device_names_t *devices = (bt_device_names_t *) pvParameters;
+
+    // start scan for HID devices
     ESP_LOGI(TAG, "SCAN...");
-    //start scan for HID devices
     esp_hid_scan(SCAN_DURATION_SECONDS, &results_len, &results);
+
     ESP_LOGI(TAG, "SCAN: %u results", results_len);
     if (results_len) {
         esp_hid_scan_result_t *r = results;
         while (r) {
-            printf("NAME: %s \n", r->name ? r->name : "");
-            // TODO connect to devices by name?
-            char *device_name = "MX Master 3";
-            if (strcmp(r->name, device_name) == 0) {
-                esp_hidh_dev_open(r->bda, r->transport, r->ble.addr_type);
+            for (int i = 0; i < devices->length; i++) {
+                if (strcmp(r->name, strdup(devices->names[i])) == 0) {
+                    printf("CONNECTING TO: %s \n", r->name ? r->name : "");
+                    esp_hidh_dev_open(r->bda, r->transport, r->ble.addr_type);
+                }
             }
             r = r->next;
         }
-
         esp_hid_scan_results_free(results);
     }
     vTaskDelete(NULL);
 }
 
-esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc_callback)  {
+esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc_callback, bt_device_names_t* bt_devices)  {
 #if HID_HOST_MODE == HIDH_IDLE_MODE
     ESP_LOGE(TAG, "Please turn on BT HID host or BLE!");
     return ESP_FAIL;
@@ -80,6 +82,6 @@ esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc
         ESP_LOGE(TAG, "esp_nimble_enable failed: %d", ret);
     }
 #endif
-    xTaskCreate(&hid_connect_task, "hid_task", 6 * 1024, NULL, 2, NULL);
+    xTaskCreate(&hid_connect_task, "hid_task", 6 * 1024, bt_devices, 2, NULL);
     return ESP_OK;
 }
