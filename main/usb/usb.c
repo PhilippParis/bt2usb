@@ -20,7 +20,6 @@ const char* hid_string_descriptor[5] = {
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance)
 {
-    printf("send hid report descriptors for instance: %i", instance);
     return usb_hid_devices[instance].report_descriptor;
 }
 
@@ -51,22 +50,16 @@ esp_err_t init_usb(hid_device_t* devices, uint8_t device_count)
     usb_hid_devices = devices;
 
     // INIT HID CONFIGURATION DESCRIPTOR
-    uint8_t *hid_configuration_descriptor = malloc((TUD_CONFIG_DESC_LEN + (TUD_HID_DESC_LEN * device_count)) * sizeof(uint8_t));
+    uint8_t hid_configuration_descriptor_length = (TUD_CONFIG_DESC_LEN + (TUD_HID_DESC_LEN * device_count));
+    uint8_t *hid_configuration_descriptor = malloc(hid_configuration_descriptor_length * sizeof(uint8_t));
     // Configuration number, interface count, string index, total length, attribute, power in mA
-    uint8_t configuration_descriptor[] = {TUD_CONFIG_DESCRIPTOR(1, device_count, 0, (TUD_CONFIG_DESC_LEN + (TUD_HID_DESC_LEN * device_count)), TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100)};
+    uint8_t configuration_descriptor[] = {TUD_CONFIG_DESCRIPTOR(1, device_count, 0, hid_configuration_descriptor_length, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100)};
     memcpy(hid_configuration_descriptor, configuration_descriptor, TUD_CONFIG_DESC_LEN);
     for (int i = 0; i < device_count; i++) {
         // Interface number, string index, boot protocol, report descriptor len, EP In address, size & polling interval
         uint8_t hid_descriptor[] = {TUD_HID_DESCRIPTOR(i, 4, false, devices[i].report_len, 0x81, 16, 10)};
         memcpy(hid_configuration_descriptor + TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * i, hid_descriptor, TUD_HID_DESC_LEN);
     }
-
-    printf("HID CONFIG DESC\n");
-    for (int i = 0; i < (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * device_count); i++) {
-        printf("%02x ", hid_configuration_descriptor[i]);
-    }
-    printf("\n");
-
 
     // INIT USB CONFIG
     const tinyusb_config_t tusb_cfg = {
