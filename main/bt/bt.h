@@ -26,12 +26,14 @@
 
 #define SCAN_DURATION_SECONDS 5
 
-typedef struct {
-    char **names;
-    size_t length;
-} bt_device_names_t;
+typedef void (*bt_connect_callback_t)(uint8_t device_count);
 
-esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc_callback, bt_device_names_t* bt_devices);
+typedef struct {
+    uint8_t max_device_count;
+    bt_connect_callback_t bt_connect_callback;
+} bt_init_data_t;
+
+esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc_callback, bt_init_data_t *init_data);
 
 
 #endif //_BT_H_

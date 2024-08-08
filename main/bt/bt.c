@@ -21,7 +21,7 @@ void hid_connect_task(void *pvParameters)
 {
     size_t results_len = 0;
     esp_hid_scan_result_t *results = NULL;
-    bt_device_names_t *devices = (bt_device_names_t *) pvParameters;
+    bt_init_data_t *init_data = (bt_init_data_t *) pvParameters;
 
     // start scan for HID devices
     ESP_LOGI(TAG, "SCAN...");
@@ -30,21 +30,18 @@ void hid_connect_task(void *pvParameters)
     ESP_LOGI(TAG, "SCAN: %u results", results_len);
     if (results_len) {
         esp_hid_scan_result_t *r = results;
-        while (r) {
-            for (int i = 0; i < devices->length; i++) {
-                if (strcmp(r->name, strdup(devices->names[i])) == 0) {
-                    printf("CONNECTING TO: %s \n", r->name ? r->name : "");
-                    esp_hidh_dev_open(r->bda, r->transport, r->ble.addr_type);
-                }
-            }
+        for(uint8_t i = 0; i < init_data->max_device_count && i < results_len; i++) {
+            printf("CONNECTING TO: %s \n", r->name ? r->name : "");
+            esp_hidh_dev_open(r->bda, r->transport, r->ble.addr_type);
             r = r->next;
         }
         esp_hid_scan_results_free(results);
     }
+    init_data->bt_connect_callback(results_len < init_data->max_device_count ? results_len : init_data->max_device_count);
     vTaskDelete(NULL);
 }
 
-esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc_callback, bt_device_names_t* bt_devices)  {
+esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc_callback, bt_init_data_t *init_data)  {
 #if HID_HOST_MODE == HIDH_IDLE_MODE
     ESP_LOGE(TAG, "Please turn on BT HID host or BLE!");
     return ESP_FAIL;
@@ -82,6 +79,6 @@ esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc
         ESP_LOGE(TAG, "esp_nimble_enable failed: %d", ret);
     }
 #endif
-    xTaskCreate(&hid_connect_task, "hid_task", 6 * 1024, bt_devices, 2, NULL);
+    xTaskCreate(&hid_connect_task, "hid_task", 6 * 1024, init_data, 2, NULL);
     return ESP_OK;
 }

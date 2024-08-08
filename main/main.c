@@ -18,11 +18,9 @@
 
 static const char *TAG = "example";
 
-static const char *devices[] = {"MX Master 3", "M720 Triathlon"};
-// set CONFIG_TINYUSB_HID_COUNT to number of devices!
-
 hid_device_t *hid_devices = NULL;
 uint8_t hid_device_count = 0;
+uint8_t expected_device_count = -1;
 
 bool compare_arrays(uint8_t *arr1, uint8_t *arr2, size_t size) {
     for (size_t i = 0; i < size; i++) {
@@ -53,12 +51,11 @@ void bt_gattc_callback(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_b
                 hid_device_count++;
             }
             break;
-            case ESP_GATTC_CONNECT_EVT:
+        case ESP_GATTC_CONNECT_EVT:
                 memcpy(hid_devices[hid_device_count].bda, param->connect.remote_bda, 6);
             break;
-
         default:
-        break;
+            break;
     }
 }
 
@@ -69,17 +66,18 @@ void bt_hidh_callback(void *handler_args, esp_event_base_t base, int32_t id, voi
     }
     esp_hidh_event_t event = (esp_hidh_event_t)id;
     esp_hidh_event_data_t *param = (esp_hidh_event_data_t *)event_data;
+    int8_t instance = -1;
 
     // FORWARD BT HID EVENT TO USB
     switch (event) {
         case ESP_HIDH_INPUT_EVENT:
-            int instance = get_hid_device_index(esp_hidh_dev_bda_get(param->input.dev));
+            instance = get_hid_device_index((uint8_t *) esp_hidh_dev_bda_get(param->input.dev));
             if (instance >= 0) {
                 tud_hid_n_report(instance, param->input.report_id, param->input.data, param->input.length);
             }
             break;
         case ESP_HIDH_FEATURE_EVENT:
-            int instance = get_hid_device_index(esp_hidh_dev_bda_get(param->feature.dev));
+            instance = get_hid_device_index((uint8_t *) esp_hidh_dev_bda_get(param->feature.dev));
             if (instance >= 0) {
                 tud_hid_n_report(instance, param->feature.report_id, param->feature.data, param->feature.length);
             }
@@ -92,18 +90,21 @@ void bt_hidh_callback(void *handler_args, esp_event_base_t base, int32_t id, voi
     }
 }
 
+void bt_connect_callback(uint8_t device_count) {
+    expected_device_count = device_count;
+}
+
 void app_main(void)
 {
-    bt_device_names_t *bt_devices = malloc(sizeof(bt_device_names_t));
-    bt_devices->names = (char **) devices;
-    bt_devices->length = sizeof(devices) / sizeof(devices[0]);
-
-    hid_devices = malloc(bt_devices->length * sizeof(hid_device_t *));
+    hid_devices = malloc(CONFIG_TINYUSB_HID_COUNT * sizeof(hid_device_t *));
+    bt_init_data_t *bt_init_data = malloc(sizeof(bt_init_data_t));
+    bt_init_data->max_device_count = CONFIG_TINYUSB_HID_COUNT;
+    bt_init_data->bt_connect_callback = bt_connect_callback;
 
     // INIT BLUETOOTH
-    init_bluetooth(bt_hidh_callback, bt_gattc_callback, bt_devices);
+    init_bluetooth(bt_hidh_callback, bt_gattc_callback, bt_init_data);
     // wait for BT devices to connect
-    while(hid_device_count != bt_devices->length) {
+    while(expected_device_count != hid_device_count) {
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 
