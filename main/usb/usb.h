@@ -11,7 +11,12 @@
 
 #define TUSB_DESC_TOTAL_LEN      (TUD_CONFIG_DESC_LEN + CFG_TUD_HID * TUD_HID_DESC_LEN)
 
+typedef struct {
+    uint8_t *report_descriptor;
+    uint8_t report_len;
+    uint8_t bda[6];
+} hid_device_t;
 
-esp_err_t init_usb(uint8_t hid_report_descriptor[], int report_len);
+esp_err_t init_usb(hid_device_t* devices, uint8_t device_count);
 
 # endif // _USB_H_

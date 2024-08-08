@@ -2,8 +2,7 @@
 
 static const char *TAG = "USB";
 
-uint8_t *hid_report_descriptor;
-uint8_t *hid_configuration_descriptor;
+hid_device_t* usb_hid_devices;
 
 const char* hid_string_descriptor[5] = {
     // array of pointer to string descriptors
@@ -21,9 +20,8 @@ const char* hid_string_descriptor[5] = {
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance)
 {
-    // We use only one interface and one HID report descriptor, so we can ignore parameter 'instance'
-    ESP_LOGI(TAG, "send hid report descriptors");
-    return hid_report_descriptor;
+    printf("send hid report descriptors for instance: %i", instance);
+    return usb_hid_devices[instance].report_descriptor;
 }
 
 // Invoked when received GET_REPORT control request
@@ -46,22 +44,30 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
 {
 }
 
-esp_err_t init_usb(uint8_t report_descriptor[], int report_len)
+esp_err_t init_usb(hid_device_t* devices, uint8_t device_count)
 {
     ESP_LOGI(TAG, "USB initialization");
     // INIT HID REPORT DESCRIPTOR
-    hid_report_descriptor = report_descriptor;
-    
+    usb_hid_devices = devices;
+
     // INIT HID CONFIGURATION DESCRIPTOR
-    uint8_t configuration_descriptor[] = {
-        // Configuration number, interface count, string index, total length, attribute, power in mA
-        TUD_CONFIG_DESCRIPTOR(1, 1, 0, TUSB_DESC_TOTAL_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
+    uint8_t *hid_configuration_descriptor = malloc((TUD_CONFIG_DESC_LEN + (TUD_HID_DESC_LEN * device_count)) * sizeof(uint8_t));
+    // Configuration number, interface count, string index, total length, attribute, power in mA
+    uint8_t configuration_descriptor[] = {TUD_CONFIG_DESCRIPTOR(1, device_count, 0, (TUD_CONFIG_DESC_LEN + (TUD_HID_DESC_LEN * device_count)), TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100)};
+    memcpy(hid_configuration_descriptor, configuration_descriptor, TUD_CONFIG_DESC_LEN);
+    for (int i = 0; i < device_count; i++) {
         // Interface number, string index, boot protocol, report descriptor len, EP In address, size & polling interval
-        TUD_HID_DESCRIPTOR(0, 4, false, report_len, 0x81, 16, 10),
-    };
-    hid_configuration_descriptor = malloc(sizeof(configuration_descriptor));
-    memcpy(hid_configuration_descriptor, configuration_descriptor, sizeof(configuration_descriptor));
-    
+        uint8_t hid_descriptor[] = {TUD_HID_DESCRIPTOR(i, 4, false, devices[i].report_len, 0x81, 16, 10)};
+        memcpy(hid_configuration_descriptor + TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * i, hid_descriptor, TUD_HID_DESC_LEN);
+    }
+
+    printf("HID CONFIG DESC\n");
+    for (int i = 0; i < (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN * device_count); i++) {
+        printf("%02x ", hid_configuration_descriptor[i]);
+    }
+    printf("\n");
+
+
     // INIT USB CONFIG
     const tinyusb_config_t tusb_cfg = {
         .device_descriptor = NULL, // TODO add device descriptor
