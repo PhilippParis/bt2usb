@@ -19,8 +19,10 @@ Any ESP board that has USB-OTG and Bluetooth support. e.g. ESP32-S3.
 ### Usage
 
 connect the ESP to your PC via the USB-OTG port.\
-After startup the application is scanning for bluetooth hid devices for SCAN_DURATION_SECONDS (default: 5) seconds.\
-It connects automatically to all devices it finds during that scan. (at most CONFIG_TINYUSB_HID_COUNT number of devices; default: 4)
+After startup the application is scanning for Bluetooth HID devices for SCAN_DURATION_SECONDS (default: 5) seconds.\
+It connects automatically to all (discoverable) devices it finds during that scan. (at most CONFIG_TINYUSB_HID_COUNT number of devices; default: 4)
+
+After a connection is established, all BT HID events are forwarded via USB to the PC.
 
 
 ### Build and Flash

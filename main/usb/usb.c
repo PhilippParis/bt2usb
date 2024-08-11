@@ -7,8 +7,8 @@ hid_device_t* usb_hid_devices;
 const char* hid_string_descriptor[5] = {
     // array of pointer to string descriptors
     (char[]){0x09, 0x04},  // 0: is supported language is English (0x0409)
-    "TinyUSB",             // 1: Manufacturer
-    "TinyUSB Device",      // 2: Product
+    "BT2USB",             // 1: Manufacturer
+    "BT2USB Device",      // 2: Product
     "123456",              // 3: Serials, should use chip ID
     "Example HID interface",  // 4: HID
 };
@@ -46,7 +46,6 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
 esp_err_t init_usb(hid_device_t* devices, uint8_t device_count)
 {
     ESP_LOGI(TAG, "USB initialization");
-    // INIT HID REPORT DESCRIPTOR
     usb_hid_devices = devices;
 
     // INIT HID CONFIGURATION DESCRIPTOR

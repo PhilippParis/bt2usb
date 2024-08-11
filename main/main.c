@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2022-2024 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
- */
-
 #include <stdlib.h>
 #include "esp_log.h"
 #include "esp_event.h"
@@ -22,6 +16,7 @@ hid_device_t *hid_devices = NULL;
 uint8_t hid_device_count = 0;
 uint8_t expected_device_count = -1;
 
+
 bool compare_arrays(uint8_t *arr1, uint8_t *arr2, size_t size) {
     for (size_t i = 0; i < size; i++) {
         if (arr1[i] != arr2[i]) {
@@ -31,6 +26,9 @@ bool compare_arrays(uint8_t *arr1, uint8_t *arr2, size_t size) {
     return true;
 }
 
+/**
+ * @brief returns the index of the device with the provided bluetooth address in the hid_devices array
+ */
 int get_hid_device_index(uint8_t *bda) {    
     for(int i = 0; i < hid_device_count; i++) {
         if (compare_arrays(hid_devices[i].bda, bda, 6)) {
@@ -40,10 +38,18 @@ int get_hid_device_index(uint8_t *bda) {
     return -1;
 }
 
+/**
+ * @brief BT GATTC callback; called when a BT connection to a device is establised
+ */
 void bt_gattc_callback(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_ble_gattc_cb_param_t *param) {
     esp_hidh_gattc_event_handler(event, gattc_if, param);
     switch (event) {
+        case ESP_GATTC_CONNECT_EVT:
+            // called first: save bluetooth address of device
+            memcpy(hid_devices[hid_device_count].bda, param->connect.remote_bda, 6);
+            break;
         case ESP_GATTC_READ_CHAR_EVT:
+            // called second: save HID report descriptors
             if (param->read.status == ESP_GATT_OK && param->read.value_len > 16) { // TODO check first bytes instead of length?
                 hid_devices[hid_device_count].report_descriptor = malloc(param->read.value_len);
                 memcpy(hid_devices[hid_device_count].report_descriptor, param->read.value, param->read.value_len);
@@ -51,14 +57,14 @@ void bt_gattc_callback(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp_b
                 hid_device_count++;
             }
             break;
-        case ESP_GATTC_CONNECT_EVT:
-                memcpy(hid_devices[hid_device_count].bda, param->connect.remote_bda, 6);
-            break;
         default:
             break;
     }
 }
 
+/**
+ * @brief BT HID callback; called when a BT event was received (e.g. input) and forwards it to USB
+ */
 void bt_hidh_callback(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
     if (!tud_connected()) {
@@ -82,18 +88,22 @@ void bt_hidh_callback(void *handler_args, esp_event_base_t base, int32_t id, voi
                 tud_hid_n_report(instance, param->feature.report_id, param->feature.data, param->feature.length);
             }
             break;
-        case ESP_HIDH_BATTERY_EVENT:
-            break;
         default:
             ESP_LOGI(TAG, "unknown BT event received");
         break;
     }
 }
 
+/**
+ * @brief BT connect callback; called when all discovered devices are connected; returns the device count;
+ */
 void bt_connect_callback(uint8_t device_count) {
     expected_device_count = device_count;
 }
 
+/**
+ * @brief main app loop
+ */
 void app_main(void)
 {
     hid_devices = malloc(CONFIG_TINYUSB_HID_COUNT * sizeof(hid_device_t *));

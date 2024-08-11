@@ -26,13 +26,24 @@
 
 #define SCAN_DURATION_SECONDS 5
 
+/**
+ * @brief bluetooth devices connected callback
+ */
 typedef void (*bt_connect_callback_t)(uint8_t device_count);
 
+/**
+ * @brief BT init data struct
+ */
 typedef struct {
-    uint8_t max_device_count;
-    bt_connect_callback_t bt_connect_callback;
+    uint8_t max_device_count;                       /*!< maximum number of HID devices supported; should be CONFIG_TINYUSB_HID_COUNT */
+    bt_connect_callback_t bt_connect_callback;      /*!< devices-connected callback; returns the count of connected devices */
 } bt_init_data_t;
 
+/**
+ * @brief scans for bluetooth hid devices; establishes connections with them and calls the specified callbacks
+ * @param hidh_callback callback called when an BT event is received (e.g. input event)
+ * @param gattc_callback  callback called when a GATT event is received (e.g. connection established)
+ */
 esp_err_t init_bluetooth(esp_event_handler_t hidh_callback, esp_gattc_cb_t gattc_callback, bt_init_data_t *init_data);
 
 
